@@ -39,6 +39,7 @@ const wom = global.workspace_manager;
 
 const Movement = movement.Movement;
 
+import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
@@ -51,7 +52,7 @@ const {
     layoutManager,
     loadTheme,
     overview,
-    panel,
+    // panel,
     setThemeStylesheet,
     screenShield,
     sessionMode,
@@ -2701,15 +2702,34 @@ export default class PopShellExtension extends Extension {
 
         if (!indicator) {
             indicator = new PanelSettings.Indicator(ext);
-            panel.addToStatusArea('pop-shell', indicator.button);
+            // panel.addToStatusArea('pop-shell', indicator.button);
         }
 
-        ext.keybindings.enable(ext.keybindings.global).enable(ext.keybindings.window_focus);
+        // ext.keybindings.enable(ext.keybindings.global).enable(ext.keybindings.window_focus);
 
         if (ext.settings.tile_by_default()) {
             ext.auto_tile_on();
         }
+
+        const original_signal_overlay_key = GObject.signal_handler_find(global.display, { signalId: "overlay-key" });
+	    if (original_signal_overlay_key !== null) {
+            global.display.disconnect(original_signal_overlay_key);
+	    }
+        global.display.connect('overlay-key', this.toggle_launcher.bind(this))
     }
+
+    toggle_launcher() {
+        if (!ext) {
+            return;
+        }
+
+        if (ext.window_search.opened) {
+            ext.window_search.close();
+        } else {
+            ext.window_search.open(ext);
+        }
+    }
+
     disable() {
         log.info('disable');
 
